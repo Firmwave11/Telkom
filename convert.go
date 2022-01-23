@@ -49,6 +49,8 @@ func HandleConvertToJson(locFile, locWriteFile string) {
 		panic(err.Error())
 	}
 
+	fmt.Println("success convert file to JSON", locWriteFile)
+
 }
 
 func HandleConvertToText(locReadFile, locWriteFile string) {
@@ -65,6 +67,7 @@ func HandleConvertToText(locReadFile, locWriteFile string) {
 		panic(err.Error())
 	}
 
+	fmt.Println("success convert file to TEXT", locWriteFile)
 }
 
 // for handle name and dot not same
