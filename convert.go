@@ -14,6 +14,12 @@ type ErrorLog struct {
 	Reason     string
 }
 
+type AccessLog struct {
+	Ip       string
+	DateTime string
+	Reason   string
+}
+
 func HandleConvertToJson(locFile, locWriteFile string) {
 	b, err := ioutil.ReadFile(locFile) // just pass the file name
 	if err != nil {
@@ -21,26 +27,19 @@ func HandleConvertToJson(locFile, locWriteFile string) {
 	}
 
 	locWriteFile = HandleReplaceFileType(locWriteFile, "json")
+	logType := GetFileType(locFile)
 
-	var dataLog = make([]ErrorLog, 0)
+	var file []byte
 	str := string(b) // convert content to a 'string'
 	lines := strings.Split(strings.ReplaceAll(str, "\r\n", "\n"), "\n")
 
-	for _, line := range lines {
-		val := strings.Split(line, " ")
-		reason := strings.Join(val[4:], " ")
-		dataLog = append(dataLog, ErrorLog{
-			DateTime:   fmt.Sprintf("%s %s", val[0], val[1]),
-			Status:     val[2],
-			UniqueCode: val[3],
-			Reason:     reason,
-		})
-	}
-
-	file, err := json.MarshalIndent(dataLog, "", " ")
-
-	if err != nil {
-		panic(err.Error())
+	switch logType {
+	case "error":
+		file = HandleErrorLog(lines)
+	case "access":
+		file = HandleAccessLog(lines)
+	default:
+		panic("cannot handle this file !! this program just handle convert json for access.log or error.log")
 	}
 
 	err = ioutil.WriteFile(locWriteFile, file, 0644)
@@ -57,6 +56,7 @@ func HandleConvertToText(locReadFile, locWriteFile string) {
 	b, err := ioutil.ReadFile(locReadFile) // just pass the file name
 
 	locWriteFile = HandleReplaceFileType(locWriteFile, "text")
+
 	if err != nil {
 		panic(err.Error())
 	}
@@ -68,6 +68,52 @@ func HandleConvertToText(locReadFile, locWriteFile string) {
 	}
 
 	fmt.Println("success convert file to TEXT", locWriteFile)
+}
+
+func HandleErrorLog(lines []string) []byte {
+	var errorLog = make([]ErrorLog, 0)
+	for _, line := range lines {
+		val := strings.Split(line, " ")
+		if len(val) > 4 {
+			reason := strings.Join(val[4:], " ")
+			errorLog = append(errorLog, ErrorLog{
+				DateTime:   fmt.Sprintf("%s %s", val[0], val[1]),
+				Status:     val[2],
+				UniqueCode: val[3],
+				Reason:     reason,
+			})
+		}
+	}
+	file, err := json.MarshalIndent(errorLog, "", " ")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return file
+}
+
+func HandleAccessLog(lines []string) []byte {
+	var accessLog = make([]AccessLog, 0)
+	for _, line := range lines {
+		val := strings.Split(line, " ")
+		if len(val) > 5 {
+			reason := strings.Join(val[5:], " ")
+			accessLog = append(accessLog, AccessLog{
+				Ip:       val[0],
+				DateTime: strings.ReplaceAll(val[3], "[", ""),
+				Reason:   reason,
+			})
+		}
+
+	}
+	file, err := json.MarshalIndent(accessLog, "", " ")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return file
 }
 
 // for handle name and dot not same
@@ -85,4 +131,12 @@ func HandleReplaceFileType(locWriteFile, typeFile string) string {
 	}
 
 	return locWriteFile
+}
+
+func GetFileType(locReadFile string) string {
+	splitLocWrite := strings.Split(locReadFile, "/")
+	newSplitDot := strings.Split(splitLocWrite[len(splitLocWrite)-1], ".")
+	logType := newSplitDot[0]
+
+	return logType
 }

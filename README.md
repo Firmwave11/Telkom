@@ -1,5 +1,6 @@
 # TELKOM TEST BACKEND DEVELOPER
 This repo for answer task backend developer telkom
+*note this program just handle file .log nginx (error.log or access.log) for convert json file
 
 ### How to use Command Line Tools
 To get tools help, we run command `-h`
